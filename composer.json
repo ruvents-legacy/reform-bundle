@@ -1,0 +1,31 @@
+{
+    "name": "ruvents/reform-bundle",
+    "description": "RUVENTS Reform Bundle",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Valentin Udaltsov",
+            "email": "udaltsov@ruvents.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.9",
+        "symfony/form": "^3.0",
+        "symfony/http-foundation": "^3.0"
+    },
+    "require-dev": {
+        "symfony/config": "^3.0",
+        "symfony/dependency-injection": "^3.0",
+        "matthiasnoback/symfony-config-test": "^2.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ruvents\\ReformBundle\\": ""
+        },
+        "exclude-from-classmap": [
+            "/Tests/"
+        ]
+    },
+    "minimum-stability": "dev"
+}
