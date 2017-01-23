@@ -17,7 +17,8 @@
     "require-dev": {
         "symfony/config": "^3.0",
         "symfony/dependency-injection": "^3.0",
-        "matthiasnoback/symfony-config-test": "^2.1"
+        "matthiasnoback/symfony-config-test": "^2.1",
+        "symfony/filesystem": "^3.2"
     },
     "autoload": {
         "psr-4": {
