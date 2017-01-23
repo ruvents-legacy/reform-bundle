@@ -59,7 +59,7 @@ class UploadType extends AbstractType
 
                 $file = isset($data['file']) && $data['file'] instanceof UploadedFile
                     ? $data['file']
-                    : $this->uploadHelper->createUploadedFile($tmpPath);
+                    : $this->uploadHelper->createMockUploadedFile($tmpPath);
 
                 if ($file === null) {
                     $event->setData(null);

@@ -2,6 +2,7 @@
 
 namespace Ruvents\ReformBundle\Helper;
 
+use Ruvents\ReformBundle\MockUploadedFile;
 use Ruvents\ReformBundle\TmpFile;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -53,9 +54,9 @@ class UploadHelper
     /**
      * @param string $pathname
      *
-     * @return null|UploadedFile
+     * @return null|MockUploadedFile
      */
-    public function createUploadedFile($pathname)
+    public function createMockUploadedFile($pathname)
     {
         if (!is_file($pathname)) {
             return null;
@@ -66,13 +67,11 @@ class UploadHelper
             ? json_decode(file_get_contents($metaPathname), true)
             : [];
 
-        return new UploadedFile(
+        return new MockUploadedFile(
             $pathname,
             isset($meta['originalName']) ? $meta['originalName'] : basename($pathname),
             isset($meta['mimeType']) ? $meta['mimeType'] : null,
-            isset($meta['size']) ? $meta['size'] : null,
-            UPLOAD_ERR_OK,
-            true
+            isset($meta['size']) ? $meta['size'] : null
         );
     }
 
