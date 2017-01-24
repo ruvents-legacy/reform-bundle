@@ -2,7 +2,7 @@
 
 namespace Ruvents\ReformBundle\Form\Extension;
 
-use Ruvents\ReformBundle\Helper\UploadHelper;
+use Ruvents\ReformBundle\Form\Type\UploadType;
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -12,16 +12,16 @@ use Symfony\Component\Form\FormEvents;
 class FormTypeUploadExtension extends AbstractTypeExtension
 {
     /**
-     * @var UploadHelper
+     * @var UploadType
      */
-    private $uploadHelper;
+    private $uploadType;
 
     /**
-     * @param UploadHelper $uploadHelper
+     * @param UploadType $uploadType
      */
-    public function __construct(UploadHelper $uploadHelper)
+    public function __construct(UploadType $uploadType)
     {
-        $this->uploadHelper = $uploadHelper;
+        $this->uploadType = $uploadType;
     }
 
     /**
@@ -33,7 +33,7 @@ class FormTypeUploadExtension extends AbstractTypeExtension
             $form = $event->getForm();
 
             if ($form->isRoot()) {
-                $this->uploadHelper->processValidatedRootForm($form);
+                $this->uploadType->processValidatedRootForm($form);
             }
         }, -1);
     }

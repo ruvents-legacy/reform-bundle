@@ -23,7 +23,7 @@ class RuventsReformExtension extends ConfigurableExtension
             $loader->load('upload.yml');
 
             $container->findDefinition('ruvents_reform.upload_type')
-                ->replaceArgument(1, $mergedConfig['upload']['default_tmp_dir']);
+                ->replaceArgument(0, $mergedConfig['upload']['default_tmp_dir']);
         }
     }
 }
