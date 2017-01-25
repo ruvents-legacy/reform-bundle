@@ -117,6 +117,22 @@ class UploadType extends AbstractType
     }
 
     /**
+     * @param FormInterface $uploadForm
+     */
+    public function registerUploadForm(FormInterface $uploadForm)
+    {
+        $rootForm = $uploadForm;
+
+        while (!$rootForm->isRoot()) {
+            $rootForm = $rootForm->getParent();
+        }
+
+        $rootHash = $this->getFormHash($rootForm);
+        $uploadHash = $this->getFormHash($uploadForm);
+        $this->formsByRootFormHash[$rootHash][$uploadHash] = $uploadForm;
+    }
+
+    /**
      * @param string $name
      * @param string $path
      *
@@ -164,21 +180,6 @@ class UploadType extends AbstractType
         file_put_contents($metaPathname, json_encode($meta));
 
         $uploadedFile->move($path, $name);
-    }
-
-    /**
-     * @param FormInterface $uploadForm
-     */
-    private function registerUploadForm(FormInterface $uploadForm)
-    {
-        $rootForm = $uploadForm;
-
-        while (!$rootForm->isRoot()) {
-            $rootForm = $rootForm->getParent();
-        }
-
-        $hash = $this->getFormHash($rootForm);
-        $this->formsByRootFormHash[$hash][] = $uploadForm;
     }
 
     /**
