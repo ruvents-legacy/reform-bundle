@@ -40,30 +40,31 @@ class UploadType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('id', HiddenType::class)
+            ->add('name', $options['name_type'], $options['name_options'])
             ->add('file', $options['file_type'], $options['file_options'])
             ->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event) {
                 $form = $event->getForm();
                 $data = $event->getData();
 
-                $id = empty($data['id']) ? null : $data['id'];
+                $name = empty($data['name']) ? null : $data['name'];
                 $file = isset($data['file']) && $data['file'] instanceof UploadedFile ? $data['file'] : null;
                 $tmpDir = $form->getConfig()->getOption('tmp_dir');
+                $dataClass = $form->getConfig()->getOption('data_class');
 
-                if (!$id && !$file) {
+                if (!$name && !$file) {
                     return;
                 }
 
-                if (!$file && !$data['file'] = $this->getMockUploadedFile($id, $tmpDir)) {
+                if (!$file && !$data['file'] = $this->getMockUploadedFile($name, $tmpDir)) {
                     return;
                 }
 
-                if (!$id) {
-                    $data['id'] = sha1(uniqid(get_class($this)));
+                if (!$name) {
+                    $data['name'] = sha1(uniqid(get_class($this)));
                 }
 
                 $this->registerUploadForm($form);
-                $form->setData(new Upload());
+                $form->setData(new $dataClass);
                 $event->setData($data);
             });
     }
@@ -78,10 +79,14 @@ class UploadType extends AbstractType
                 'data_class' => Upload::class,
                 'empty_data' => null,
                 'label' => false,
+                'name_type' => HiddenType::class,
+                'name_options' => [],
                 'file_type' => FileType::class,
                 'file_options' => [],
                 'tmp_dir' => $this->defaultTmpDir,
             ])
+            ->setAllowedTypes('name_type', 'string')
+            ->setAllowedTypes('name_options', 'array')
             ->setAllowedTypes('file_type', 'string')
             ->setAllowedTypes('file_options', 'array')
             ->setAllowedTypes('tmp_dir', 'string');
@@ -101,12 +106,10 @@ class UploadType extends AbstractType
         foreach ($this->formsByRootFormHash[$hash] as $form) {
             $upload = $form->getData();
 
-            dump($upload);
-
-            if ($form->isValid() && $upload instanceof Upload && $upload->getId() && $upload->getFile()) {
+            if ($form->isValid() && $upload instanceof Upload && $upload->getName() && $upload->getFile()) {
                 $this->saveUploadedFile(
                     $upload->getFile(),
-                    $upload->getId(),
+                    $upload->getName(),
                     $form->getConfig()->getOption('tmp_dir')
                 );
             }
@@ -114,29 +117,14 @@ class UploadType extends AbstractType
     }
 
     /**
-     * @param FormInterface $uploadForm
-     */
-    private function registerUploadForm(FormInterface $uploadForm)
-    {
-        $rootForm = $uploadForm;
-
-        while (!$rootForm->isRoot()) {
-            $rootForm = $rootForm->getParent();
-        }
-
-        $hash = $this->getFormHash($rootForm);
-        $this->formsByRootFormHash[$hash][] = $uploadForm;
-    }
-
-    /**
-     * @param string $id
+     * @param string $name
      * @param string $path
      *
      * @return null|MockUploadedFile
      */
-    private function getMockUploadedFile($id, $path)
+    private function getMockUploadedFile($name, $path)
     {
-        $pathname = rtrim($path, '/').'/'.$id;
+        $pathname = rtrim($path, '/').'/'.$name;
 
         if (!is_file($pathname)) {
             return null;
@@ -157,16 +145,16 @@ class UploadType extends AbstractType
 
     /**
      * @param UploadedFile $uploadedFile
-     * @param string       $id
+     * @param string       $name
      * @param string       $path
      */
-    private function saveUploadedFile(UploadedFile $uploadedFile, $id, $path)
+    private function saveUploadedFile(UploadedFile $uploadedFile, $name, $path)
     {
         if (!is_dir($path)) {
             mkdir($path, 0777, true);
         }
 
-        $metaPathname = rtrim($path, '/').'/'.$id.'.json';
+        $metaPathname = rtrim($path, '/').'/'.$name.'.json';
         $meta = [
             'originalName' => $uploadedFile->getClientOriginalName(),
             'mimeType' => $uploadedFile->getClientMimeType(),
@@ -175,7 +163,22 @@ class UploadType extends AbstractType
 
         file_put_contents($metaPathname, json_encode($meta));
 
-        $uploadedFile->move($path, $id);
+        $uploadedFile->move($path, $name);
+    }
+
+    /**
+     * @param FormInterface $uploadForm
+     */
+    private function registerUploadForm(FormInterface $uploadForm)
+    {
+        $rootForm = $uploadForm;
+
+        while (!$rootForm->isRoot()) {
+            $rootForm = $rootForm->getParent();
+        }
+
+        $hash = $this->getFormHash($rootForm);
+        $this->formsByRootFormHash[$hash][] = $uploadForm;
     }
 
     /**

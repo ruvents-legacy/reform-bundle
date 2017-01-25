@@ -9,7 +9,7 @@ class Upload
     /**
      * @var string
      */
-    protected $id;
+    protected $name;
 
     /**
      * @var File
@@ -19,19 +19,19 @@ class Upload
     /**
      * @return string
      */
-    public function getId()
+    public function getName()
     {
-        return $this->id;
+        return $this->name;
     }
 
     /**
-     * @param string $id
+     * @param string $name
      *
      * @return $this
      */
-    public function setId($id)
+    public function setName($name)
     {
-        $this->id = $id;
+        $this->name = $name;
 
         return $this;
     }
