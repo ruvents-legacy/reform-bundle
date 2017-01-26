@@ -3,14 +3,10 @@
 namespace Ruvents\ReformBundle;
 
 use Symfony\Component\HttpFoundation\File\File;
-use Symfony\Component\Validator\Constraints as Assert;
 
 class Upload
 {
     /**
-     * @Assert\NotBlank()
-     * @Assert\Regex("/^[\w\.]+$/")
-     *
      * @var string
      */
     protected $name;

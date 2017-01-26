@@ -54,11 +54,16 @@ class UploadType extends AbstractType
                 $dataClass = $form->getConfig()->getOption('data_class');
 
                 /**
-                 * @var string            $name
+                 * @var null|string       $name
                  * @var null|UploadedFile $file
                  * @var string            $path
-                 * @var string            $dataClass
+                 * @var null|string       $dataClass
                  */
+
+                // to avoid security issues
+                if (preg_match('#[/\\\]+#', $name)) {
+                    $name = null;
+                }
 
                 if (!$name && !$file) {
                     return;
