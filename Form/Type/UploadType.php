@@ -19,7 +19,7 @@ class UploadType extends AbstractType
     /**
      * @var string
      */
-    private $defaultTmpDir;
+    private $defaultPath;
 
     /**
      * @var FormInterface[][]
@@ -27,11 +27,11 @@ class UploadType extends AbstractType
     private $formsByRootFormHash = [];
 
     /**
-     * @param string $defaultTmpDir
+     * @param string $defaultPath
      */
-    public function __construct($defaultTmpDir)
+    public function __construct($defaultPath)
     {
-        $this->defaultTmpDir = $defaultTmpDir;
+        $this->defaultPath = $defaultPath;
     }
 
     /**
@@ -48,14 +48,14 @@ class UploadType extends AbstractType
 
                 $name = empty($data['name']) ? null : $data['name'];
                 $file = isset($data['file']) && $data['file'] instanceof UploadedFile ? $data['file'] : null;
-                $tmpDir = $form->getConfig()->getOption('tmp_dir');
+                $path = $form->getConfig()->getOption('path');
                 $dataClass = $form->getConfig()->getOption('data_class');
 
                 if (!$name && !$file) {
                     return;
                 }
 
-                if (!$file && !$data['file'] = $this->getMockUploadedFile($name, $tmpDir)) {
+                if (!$file && !$data['file'] = $this->getMockUploadedFile($name, $path)) {
                     return;
                 }
 
@@ -83,13 +83,13 @@ class UploadType extends AbstractType
                 'name_options' => [],
                 'file_type' => FileType::class,
                 'file_options' => [],
-                'tmp_dir' => $this->defaultTmpDir,
+                'path' => $this->defaultPath,
             ])
             ->setAllowedTypes('name_type', 'string')
             ->setAllowedTypes('name_options', 'array')
             ->setAllowedTypes('file_type', 'string')
             ->setAllowedTypes('file_options', 'array')
-            ->setAllowedTypes('tmp_dir', 'string');
+            ->setAllowedTypes('path', 'string');
     }
 
     /**
@@ -107,11 +107,13 @@ class UploadType extends AbstractType
             $upload = $form->getData();
 
             if ($form->isValid() && $upload instanceof Upload && $upload->getName() && $upload->getFile()) {
-                $this->saveUploadedFile(
+                $mock = $this->saveUploadedFile(
                     $upload->getFile(),
                     $upload->getName(),
-                    $form->getConfig()->getOption('tmp_dir')
+                    $form->getConfig()->getOption('path')
                 );
+
+                $upload->setFile($mock);
             }
         }
     }
@@ -163,6 +165,8 @@ class UploadType extends AbstractType
      * @param UploadedFile $uploadedFile
      * @param string       $name
      * @param string       $path
+     *
+     * @return MockUploadedFile
      */
     private function saveUploadedFile(UploadedFile $uploadedFile, $name, $path)
     {
@@ -179,7 +183,14 @@ class UploadType extends AbstractType
 
         file_put_contents($metaPathname, json_encode($meta));
 
-        $uploadedFile->move($path, $name);
+        $file = $uploadedFile->move($path, $name);
+
+        return new MockUploadedFile(
+            $file->getPathname(),
+            $uploadedFile->getClientOriginalName(),
+            $uploadedFile->getClientMimeType(),
+            $uploadedFile->getClientSize()
+        );
     }
 
     /**

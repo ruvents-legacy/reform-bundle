@@ -20,7 +20,7 @@ class Configuration implements ConfigurationInterface
                 ->arrayNode('upload')
                     ->canBeEnabled()
                     ->children()
-                        ->scalarNode('default_tmp_dir')
+                        ->scalarNode('default_path')
                             ->isRequired()
                             ->cannotBeEmpty()
                         ->end()
