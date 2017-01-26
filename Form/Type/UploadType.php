@@ -75,7 +75,7 @@ class UploadType extends AbstractType
 
                 if (!$name) {
                     $ext = $file->guessExtension();
-                    $name = sha1(uniqid(get_class($this))).($ext ? '.'.$ext : '');
+                    $name = sha1(uniqid(get_class($this), true)).($ext ? '.'.$ext : '');
                 }
 
                 $data = is_array($data) ? $data : [];
