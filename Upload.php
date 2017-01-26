@@ -8,7 +8,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 class Upload
 {
     /**
-     * @Assert\Regex("/^\w+$/")
+     * @Assert\Regex("/^[\w\.]+$/")
      *
      * @var string
      */

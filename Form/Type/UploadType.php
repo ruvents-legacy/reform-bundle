@@ -51,16 +51,26 @@ class UploadType extends AbstractType
                 $path = $form->getConfig()->getOption('path');
                 $dataClass = $form->getConfig()->getOption('data_class');
 
+                /**
+                 * @var string            $name
+                 * @var null|UploadedFile $file
+                 * @var string            $path
+                 * @var string            $dataClass
+                 */
+
                 if (!$name && !$file) {
                     return;
                 }
 
-                if (!$file && !$data['file'] = $this->getMockUploadedFile($name, $path)) {
+                if (!$file = $file ?: $this->getMockUploadedFile($name, $path)) {
                     return;
                 }
 
+                $data['file'] = $file;
+
                 if (!$name) {
-                    $data['name'] = sha1(uniqid(get_class($this)));
+                    $ext = $file->guessExtension();
+                    $data['name'] = sha1(uniqid(get_class($this))).($ext ? '.'.$ext : '');
                 }
 
                 $this->registerUploadForm($form);
