@@ -3,31 +3,25 @@
 namespace Ruvents\ReformBundle\Tests;
 
 use Ruvents\ReformBundle\MockUploadedFile;
-use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
+use Symfony\Component\HttpFoundation\File\File;
 
-class MockUploadedFileTest extends \PHPUnit_Framework_TestCase
+class MockUploadedFileTest extends UploadTypeTestCase
 {
-    /**
-     * @var Filesystem
-     */
-    private $fs;
-
-    private $tmpDir;
-
     /**
      * @dataProvider constructorData()
      */
     public function testConstructor($arguments, $values)
     {
-        /** @var MockUploadedFile $upl */
-        $upl = (new \ReflectionClass(MockUploadedFile::class))->newInstanceArgs($arguments);
+        /** @var MockUploadedFile $mockUploadedFile */
+        $mockUploadedFile = (new \ReflectionClass(MockUploadedFile::class))->newInstanceArgs($arguments);
 
         $this->assertEquals($values, [
-            $upl->getPathname(),
-            $upl->getClientOriginalName(),
-            $upl->getClientMimeType(),
-            $upl->getClientSize(),
-            $upl->getError(),
+            $mockUploadedFile->getPathname(),
+            $mockUploadedFile->getClientOriginalName(),
+            $mockUploadedFile->getClientMimeType(),
+            $mockUploadedFile->getClientSize(),
+            $mockUploadedFile->getError(),
         ]);
     }
 
@@ -39,39 +33,32 @@ class MockUploadedFileTest extends \PHPUnit_Framework_TestCase
         ];
     }
 
+    public function testFileNotFoundException()
+    {
+        $this->expectException(FileNotFoundException::class);
+
+        new MockUploadedFile($this->tmpDir.'/aaaa', 'b');
+    }
+
     public function testValid()
     {
-        $f = new MockUploadedFile(__FILE__, 'a');
+        $mockUploadedFile = new MockUploadedFile(__FILE__, 'a');
 
-        $this->assertTrue($f->isValid());
+        $this->assertTrue($mockUploadedFile->isValid());
     }
 
     public function testMove()
     {
-        $file = $this->tmpDir.'/test.file';
-        $contents = random_int(0, 10000);
+        $file = $this->createFile();
 
-        $this->fs->touch($file);
-        file_put_contents($file, $contents);
+        $contents = file_get_contents($file);
 
-        (new MockUploadedFile($file, 'a'))->move($this->tmpDir.'/new', 'new.file');
+        $movedFile = (new MockUploadedFile($file->getPathname(), 'test'))
+            ->move($this->tmpDir.'/moved', $file->getBasename().'_moved');
 
-        $newFile = $this->tmpDir.'/new/new.file';
-
-        $this->assertFileExists($newFile);
-        $this->assertEquals($contents, file_get_contents($newFile));
-    }
-
-    protected function setUp()
-    {
-        $this->fs = new Filesystem();
-        $this->tmpDir = __DIR__.'/tmp';
-
-        $this->fs->mkdir($this->tmpDir);
-    }
-
-    protected function tearDown()
-    {
-        $this->fs->remove($this->tmpDir);
+        $this->assertInstanceOf(File::class, $movedFile);
+        $this->assertFalse($file->isFile());
+        $this->assertTrue($movedFile->isFile());
+        $this->assertEquals($contents, file_get_contents($movedFile->getPathname()));
     }
 }

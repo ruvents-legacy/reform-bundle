@@ -4,32 +4,14 @@ namespace Ruvents\ReformBundle\Tests\Form\Type;
 
 use Ruvents\ReformBundle\Form\Extension\FormTypeUploadExtension;
 use Ruvents\ReformBundle\Form\Type\UploadType;
-use Ruvents\ReformBundle\Helper\UploadHelper;
 use Ruvents\ReformBundle\MockUploadedFile;
-use Ruvents\ReformBundle\TmpFile;
-use Symfony\Component\Filesystem\Filesystem;
+use Ruvents\ReformBundle\Tests\UploadTypeTestCase;
+use Ruvents\ReformBundle\Upload;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\PreloadedExtension;
-use Symfony\Component\Form\Test\TypeTestCase;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-class UploadTypeTest extends TypeTestCase
+class UploadTypeTest extends UploadTypeTestCase
 {
-    /**
-     * @var UploadHelper
-     */
-    private $uploadHelper;
-
-    /**
-     * @var string
-     */
-    private $tmpDir;
-
-    /**
-     * @var Filesystem
-     */
-    private $fs;
-
     public function testNotSubmitted()
     {
         $form = $this->factory->create(UploadType::class);
@@ -37,9 +19,11 @@ class UploadTypeTest extends TypeTestCase
         $view = $form->createView();
         $children = $view->children;
 
-        $this->assertArrayHasKey('id', $children);
+        $this->assertArrayHasKey('name', $children);
         $this->assertArrayHasKey('file', $children);
-        $this->assertEmpty($children['id']->vars['value']);
+
+        $this->assertEmpty($children['name']->vars['value']);
+        $this->assertNull($children['name']->vars['data']);
         $this->assertNull($children['file']->vars['data']);
     }
 
@@ -59,9 +43,11 @@ class UploadTypeTest extends TypeTestCase
         $view = $form->createView();
         $children = $view->children;
 
-        $this->assertArrayHasKey('id', $children);
+        $this->assertArrayHasKey('name', $children);
         $this->assertArrayHasKey('file', $children);
-        $this->assertEmpty($children['id']->vars['value']);
+
+        $this->assertEmpty($children['name']->vars['value']);
+        $this->assertNull($children['name']->vars['data']);
         $this->assertNull($children['file']->vars['data']);
     }
 
@@ -69,100 +55,74 @@ class UploadTypeTest extends TypeTestCase
     {
         $form = $this->factory->create(UploadType::class);
 
+        $uploadedFile = $this->createUploadedFile();
+        $uploadedExt = $uploadedFile->guessExtension();
+
         $form->submit([
-            'id' => '',
-            'file' => $upl = $this->createUploadedFile(),
+            'name' => '',
+            'file' => $uploadedFile,
         ]);
 
         $this->assertTrue($form->isSynchronized());
         $this->assertTrue($form->isValid());
 
-        $id = $form->get('id')->getData();
-        $this->assertRegExp('/^\w+$/', $id);
+        $upload = $form->getData();
+        $name = $upload->getName();
+        $file = $upload->getFile();
 
-        /** @var TmpFile $tmpFile */
-        $tmpFile = $form->getData();
+        /**
+         * @var Upload           $upload
+         * @var MockUploadedFile $file
+         */
 
-        $this->assertInstanceOf(TmpFile::class, $tmpFile);
-        $this->assertEquals($id, $tmpFile->getBasename());
-        $this->assertEquals($this->tmpDir, $tmpFile->getPath());
-        $this->assertTrue($tmpFile->isFile());
-        $this->assertEquals($upl, $tmpFile->getUploadedFile());
-        $this->assertFalse($tmpFile->getUploadedFile()->isFile());
+        $this->assertRegExp('/^[\w]{40}\.'.$uploadedExt.'$/', $name);
+        $this->assertInstanceOf(Upload::class, $upload);
+        $this->assertInstanceOf(MockUploadedFile::class, $file);
+        $this->assertEquals($name, $file->getBasename());
+        $this->assertTrue($file->isFile());
 
         $view = $form->createView();
         $children = $view->children;
 
-        $this->assertArrayHasKey('id', $children);
+        $this->assertArrayHasKey('name', $children);
         $this->assertArrayHasKey('file', $children);
-        $this->assertEquals($id, $children['id']->vars['value']);
+        $this->assertEquals($name, $children['name']->vars['value']);
 
-        $this->resubmit($id, $upl);
+        $this->resubmit($upload);
     }
 
-    public function resubmit($id, UploadedFile $upl)
+    public function resubmit(Upload $oldUpload)
     {
         $form = $this->factory->create(UploadType::class);
 
         $form->submit([
-            'id' => $id,
+            'name' => $oldUpload->getName(),
         ]);
 
         $this->assertTrue($form->isSynchronized());
         $this->assertTrue($form->isValid());
-        $this->assertEquals($id, $form->get('id')->getData());
 
-        /** @var TmpFile $tmpFile */
-        $tmpFile = $form->getData();
+        $upload = $form->getData();
+        $name = $upload->getName();
+        $file = $upload->getFile();
 
-        $this->assertInstanceOf(TmpFile::class, $tmpFile);
-        $this->assertEquals($id, $tmpFile->getBasename());
-        $this->assertEquals($this->tmpDir, $tmpFile->getPath());
-        $this->assertTrue($tmpFile->isFile());
-        $this->assertInstanceOf(MockUploadedFile::class, $tmpFile->getUploadedFile());
-        $this->assertTrue($tmpFile->getUploadedFile()->isFile());
-        $this->assertEquals($upl->getClientOriginalName(), $tmpFile->getUploadedFile()->getClientOriginalName());
-        $this->assertEquals($upl->getClientMimeType(), $tmpFile->getUploadedFile()->getClientMimeType());
-        $this->assertEquals($upl->getClientSize(), $tmpFile->getUploadedFile()->getClientSize());
+        /**
+         * @var Upload           $upload
+         * @var MockUploadedFile $file
+         */
+
+        $this->assertEquals($oldUpload->getName(), $name);
+        $this->assertEquals($oldUpload->getFile()->getRealPath(), $file->getRealPath());
+        $this->assertFileEquals($oldUpload->getFile()->getPathname(), $file->getPathname());
     }
 
     protected function getExtensions()
     {
         return [
             new PreloadedExtension(
-                [new UploadType($this->uploadHelper, $this->tmpDir)],
-                [FormType::class => [new FormTypeUploadExtension($this->uploadHelper)]]
+                [$uploadType = new UploadType($this->tmpDir)],
+                [FormType::class => [new FormTypeUploadExtension($uploadType)]]
             ),
         ];
-    }
-
-    protected function setUp()
-    {
-        $this->uploadHelper = new UploadHelper();
-        $this->tmpDir = __DIR__.'/../tmp';
-        $this->fs = new Filesystem();
-
-        $this->fs->mkdir($this->tmpDir);
-
-        parent::setUp();
-    }
-
-    protected function tearDown()
-    {
-        $this->fs->remove($this->tmpDir);
-    }
-
-    private function createUploadedFile()
-    {
-        $path = $this->tmpDir.'/'.random_int(0, 10000);
-        $this->fs->touch($path);
-        file_put_contents($path, $this->getRandonString());
-
-        return new UploadedFile($path, basename($path), $this->getRandonString(), random_int(0, 1000), null, true);
-    }
-
-    private function getRandonString()
-    {
-        return base64_encode(random_bytes(100));
     }
 }
