@@ -73,16 +73,22 @@ class UploadType extends AbstractType
                     return;
                 }
 
-                $data['file'] = $file;
-
                 if (!$name) {
                     $ext = $file->guessExtension();
-                    $data['name'] = sha1(uniqid(get_class($this))).($ext ? '.'.$ext : '');
+                    $name = sha1(uniqid(get_class($this))).($ext ? '.'.$ext : '');
+                }
+
+                $data = is_array($data) ? $data : [];
+                $data['name'] = $name;
+                $data['file'] = $file;
+
+                $event->setData($data);
+
+                if (null === $form->getData()) {
+                    $form->setData(new $dataClass);
                 }
 
                 $this->registerUploadForm($form);
-                $form->setData(new $dataClass);
-                $event->setData($data);
             });
     }
 
