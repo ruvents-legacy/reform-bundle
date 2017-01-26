@@ -166,7 +166,7 @@ class UploadType extends AbstractType
         }
 
         $metaPathname = $pathname.'.json';
-        $meta = is_file($pathname)
+        $meta = is_file($metaPathname)
             ? json_decode(file_get_contents($metaPathname), true)
             : [];
 
