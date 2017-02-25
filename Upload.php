@@ -4,7 +4,7 @@ namespace Ruvents\ReformBundle;
 
 use Symfony\Component\HttpFoundation\File\File;
 
-class Upload
+class Upload implements \Serializable
 {
     /**
      * @var string
@@ -54,5 +54,21 @@ class Upload
         $this->file = $file;
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function serialize()
+    {
+        return serialize($this->name);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function unserialize($serialized)
+    {
+        $this->name = unserialize($serialized);
     }
 }
