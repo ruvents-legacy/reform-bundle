@@ -101,17 +101,18 @@ class UploadType extends AbstractType
             ->setDefaults([
                 'data_class' => Upload::class,
                 'empty_data' => null,
+                'error_bubbling' => false,
+                'file_options' => [],
+                'file_type' => FileType::class,
                 'label' => false,
                 'name_type' => HiddenType::class,
                 'name_options' => [],
-                'file_type' => FileType::class,
-                'file_options' => [],
                 'path' => $this->defaultPath,
             ])
-            ->setAllowedTypes('name_type', 'string')
-            ->setAllowedTypes('name_options', 'array')
             ->setAllowedTypes('file_type', 'string')
             ->setAllowedTypes('file_options', 'array')
+            ->setAllowedTypes('name_type', 'string')
+            ->setAllowedTypes('name_options', 'array')
             ->setAllowedTypes('path', 'string');
     }
 
