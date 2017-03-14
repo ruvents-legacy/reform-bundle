@@ -49,7 +49,8 @@ class UploadType extends AbstractType
                 $data = $event->getData();
 
                 $name = empty($data['name']) ? null : $data['name'];
-                $file = isset($data['file']) && $data['file'] instanceof UploadedFile ? $data['file'] : null;
+                $file = isset($data['file']) && $data['file'] instanceof UploadedFile && $data['file']->isValid()
+                    ? $data['file'] : null;
                 $path = $form->getConfig()->getOption('path');
                 $dataClass = $form->getConfig()->getOption('data_class');
 
