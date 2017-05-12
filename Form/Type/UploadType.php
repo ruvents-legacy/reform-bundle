@@ -48,33 +48,36 @@ class UploadType extends AbstractType
                 $form = $event->getForm();
                 $data = $event->getData();
 
-                $name = empty($data['name']) ? null : $data['name'];
-                $file = isset($data['file']) && $data['file'] instanceof UploadedFile && $data['file']->isValid()
-                    ? $data['file'] : null;
-                $path = $form->getConfig()->getOption('path');
-                $dataClass = $form->getConfig()->getOption('data_class');
+                $name = trim($data['name']);
 
-                /**
-                 * @var null|string       $name
-                 * @var null|UploadedFile $file
-                 * @var string            $path
-                 * @var null|string       $dataClass
-                 */
-
-                // to avoid security issues
-                if (preg_match('#[/\\\]+#', $name)) {
+                if ('' === $name || 0 < preg_match('#[/\\\]+#', $name)) {
                     $name = null;
                 }
 
-                if (!$name && !$file) {
-                    return;
+                $file = $data['file'];
+
+                if (!$file instanceof UploadedFile || !$file->isValid()) {
+                    $file = null;
                 }
 
-                if (!$file = $file ?: $this->getMockUploadedFile($name, $path)) {
-                    return;
+                if (null === $file) {
+                    if (null === $name) {
+                        return;
+                    }
+
+                    $path = $form->getConfig()->getOption('path');
+                    $file = $this->getMockUploadedFile($name, $path);
+
+                    if (null === $file) {
+                        return;
+                    }
+                } else {
+                    $name = null;
                 }
 
-                if (!$name) {
+                // TODO: remove old MockUploadedFile
+
+                if (null === $name) {
                     $ext = $file->guessExtension();
                     $name = sha1(uniqid(get_class($this), true)).($ext ? '.'.$ext : '');
                 }
@@ -86,6 +89,7 @@ class UploadType extends AbstractType
                 $event->setData($data);
 
                 if (null === $form->getData()) {
+                    $dataClass = $form->getConfig()->getOption('data_class');
                     $form->setData(new $dataClass);
                 }
 
