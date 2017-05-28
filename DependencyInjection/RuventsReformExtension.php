@@ -14,16 +14,13 @@ class RuventsReformExtension extends ConfigurableExtension
      */
     public function loadInternal(array $mergedConfig, ContainerBuilder $container)
     {
-        $loader = new YamlFileLoader(
-            $container,
-            new FileLocator(__DIR__.'/../Resources/config')
-        );
+        $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
 
         if ($mergedConfig['upload']['enabled']) {
             $loader->load('upload.yml');
 
             $container->findDefinition('ruvents_reform.upload_type')
-                ->replaceArgument(0, $mergedConfig['upload']['default_path']);
+                ->replaceArgument(0, $mergedConfig['upload']['path']);
         }
     }
 }

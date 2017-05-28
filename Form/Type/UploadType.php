@@ -2,8 +2,8 @@
 
 namespace Ruvents\ReformBundle\Form\Type;
 
-use Ruvents\ReformBundle\MockUploadedFile;
-use Ruvents\ReformBundle\Upload;
+use Ruvents\ReformBundle\SavableUploadedFile;
+use Ruvents\ReformBundle\SavedUploadedFile;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
@@ -11,27 +11,26 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\File\UploadedFile as HttpUploadedFile;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class UploadType extends AbstractType
 {
+    const ID_CHILD = '_id';
+
     /**
      * @var string
      */
-    private $defaultPath;
+    private $path;
 
     /**
-     * @var FormInterface[][]
+     * @var SavableUploadedFile[][]
      */
-    private $formsByRootFormHash = [];
+    private $savableUploadedFiles = [];
 
-    /**
-     * @param string $defaultPath
-     */
-    public function __construct($defaultPath)
+    public function __construct($path)
     {
-        $this->defaultPath = $defaultPath;
+        $this->path = $path;
     }
 
     /**
@@ -42,59 +41,9 @@ class UploadType extends AbstractType
         $options['file_options']['required'] = $options['required'];
 
         $builder
-            ->add('name', $options['name_type'], $options['name_options'])
-            ->add('file', $options['file_type'], $options['file_options'])
-            ->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event) {
-                $form = $event->getForm();
-                $data = $event->getData();
-
-                $name = trim($data['name']);
-
-                if ('' === $name || 0 < preg_match('#[/\\\]+#', $name)) {
-                    $name = null;
-                }
-
-                $file = $data['file'];
-
-                if (!$file instanceof UploadedFile || !$file->isValid()) {
-                    $file = null;
-                }
-
-                if (null === $file) {
-                    if (null === $name) {
-                        return;
-                    }
-
-                    $path = $form->getConfig()->getOption('path');
-                    $file = $this->getMockUploadedFile($name, $path);
-
-                    if (null === $file) {
-                        return;
-                    }
-                } else {
-                    $name = null;
-                }
-
-                // TODO: remove old MockUploadedFile
-
-                if (null === $name) {
-                    $ext = $file->guessExtension();
-                    $name = sha1(uniqid(get_class($this), true)).($ext ? '.'.$ext : '');
-                }
-
-                $data = is_array($data) ? $data : [];
-                $data['name'] = $name;
-                $data['file'] = $file;
-
-                $event->setData($data);
-
-                if (null === $form->getData()) {
-                    $dataClass = $form->getConfig()->getOption('data_class');
-                    $form->setData(new $dataClass);
-                }
-
-                $this->registerUploadForm($form);
-            });
+            ->add(self::ID_CHILD, HiddenType::class, ['mapped' => false])
+            ->add($options['file_name'], $options['file_type'], $options['file_options'])
+            ->addEventListener(FormEvents::PRE_SUBMIT, [$this, 'onPreSubmit']);
     }
 
     /**
@@ -104,122 +53,90 @@ class UploadType extends AbstractType
     {
         $resolver
             ->setDefaults([
-                'data_class' => Upload::class,
-                'empty_data' => null,
                 'error_bubbling' => false,
-                'file_options' => [],
+                'file_name' => 'file',
                 'file_type' => FileType::class,
+                'file_options' => [],
                 'label' => false,
-                'name_type' => HiddenType::class,
-                'name_options' => [],
-                'path' => $this->defaultPath,
             ])
+            ->setAllowedTypes('file_name', 'string')
             ->setAllowedTypes('file_type', 'string')
-            ->setAllowedTypes('file_options', 'array')
-            ->setAllowedTypes('name_type', 'string')
-            ->setAllowedTypes('name_options', 'array')
-            ->setAllowedTypes('path', 'string');
+            ->setAllowedTypes('file_options', 'array');
     }
 
-    /**
-     * @param FormInterface $rootForm
-     */
-    public function processValidatedRootForm(FormInterface $rootForm)
+    public function onPreSubmit(FormEvent $event)
+    {
+        $form = $event->getForm();
+        $data = $event->getData();
+        $fileName = $form->getConfig()->getOption('file_name');
+
+        $id = isset($data[self::ID_CHILD]) && $this->isIdValid($data[self::ID_CHILD])
+            ? $data[self::ID_CHILD]
+            : null;
+        $uploadedFile = isset($data[$fileName]) && $data[$fileName] instanceof HttpUploadedFile
+            ? $data[$fileName]
+            : null;
+
+        // if a new file was uploaded
+        if (null !== $uploadedFile) {
+            if (null !== $id && null !== $old = SavedUploadedFile::find($this->getPathname($id))) {
+                $old->remove();
+            }
+
+            $id = $this->generateId();
+            $uploadedFile = SavableUploadedFile::fromUploadedFile($uploadedFile);
+
+            $this->savableUploadedFiles[$this->getFormHash($form->getRoot())][$id] = $uploadedFile;
+        } // when id is correct, try to find a saved uploaded file
+        elseif (null !== $id) {
+            $uploadedFile = SavedUploadedFile::find($this->getPathname($id));
+        }
+
+        $data[self::ID_CHILD] = $id;
+        $data[$fileName] = $uploadedFile;
+
+        $event->setData($data);
+    }
+
+    public function saveUploadedFiles(FormInterface $rootForm)
     {
         $hash = $this->getFormHash($rootForm);
 
-        if (empty($this->formsByRootFormHash[$hash])) {
+        if (empty($this->savableUploadedFiles[$hash])) {
             return;
         }
 
-        foreach ($this->formsByRootFormHash[$hash] as $form) {
-            $upload = $form->getData();
-
-            if ($form->isValid() && $upload instanceof Upload && $upload->getName() && $upload->getFile()) {
-                $mock = $this->saveUploadedFile(
-                    $upload->getFile(),
-                    $upload->getName(),
-                    $form->getConfig()->getOption('path')
-                );
-
-                $upload->setFile($mock);
-            }
+        foreach ($this->savableUploadedFiles[$hash] as $id => $savableUploadedFile) {
+            $savableUploadedFile->save($this->getPathname($id));
         }
     }
 
     /**
-     * @param FormInterface $uploadForm
-     */
-    public function registerUploadForm(FormInterface $uploadForm)
-    {
-        $rootForm = $uploadForm;
-
-        while (!$rootForm->isRoot()) {
-            $rootForm = $rootForm->getParent();
-        }
-
-        $rootHash = $this->getFormHash($rootForm);
-        $uploadHash = $this->getFormHash($uploadForm);
-        $this->formsByRootFormHash[$rootHash][$uploadHash] = $uploadForm;
-    }
-
-    /**
-     * @param string $name
-     * @param string $path
+     * @param mixed $id
      *
-     * @return null|MockUploadedFile
+     * @return bool
      */
-    private function getMockUploadedFile($name, $path)
+    private function isIdValid($id)
     {
-        $pathname = rtrim($path, '/').'/'.$name;
-
-        if (!is_file($pathname)) {
-            return null;
-        }
-
-        $metaPathname = $pathname.'.json';
-        $meta = is_file($metaPathname)
-            ? json_decode(file_get_contents($metaPathname), true)
-            : [];
-
-        return new MockUploadedFile(
-            $pathname,
-            isset($meta['originalName']) ? $meta['originalName'] : basename($pathname),
-            isset($meta['mimeType']) ? $meta['mimeType'] : null,
-            isset($meta['size']) ? $meta['size'] : null
-        );
+        return is_string($id) && preg_match('/^[0-9a-zA-Z_-]+$/', $id) > 0;
     }
 
     /**
-     * @param UploadedFile $uploadedFile
-     * @param string       $name
-     * @param string       $path
-     *
-     * @return MockUploadedFile
+     * @return string
      */
-    private function saveUploadedFile(UploadedFile $uploadedFile, $name, $path)
+    private function generateId()
     {
-        if (!is_dir($path)) {
-            mkdir($path, 0777, true);
-        }
+        return rtrim(strtr(base64_encode(random_bytes(30)), '+/', '-_'), '=');
+    }
 
-        $metaPathname = rtrim($path, '/').'/'.$name.'.json';
-        $meta = [
-            'originalName' => $uploadedFile->getClientOriginalName(),
-            'mimeType' => $uploadedFile->getClientMimeType(),
-            'size' => $uploadedFile->getClientSize(),
-        ];
-
-        file_put_contents($metaPathname, json_encode($meta));
-
-        $file = $uploadedFile->move($path, $name);
-
-        return new MockUploadedFile(
-            $file->getPathname(),
-            $uploadedFile->getClientOriginalName(),
-            $uploadedFile->getClientMimeType(),
-            $uploadedFile->getClientSize()
-        );
+    /**
+     * @param string $id
+     *
+     * @return string
+     */
+    private function getPathname($id)
+    {
+        return rtrim($this->path, '/').'/'.$id;
     }
 
     /**

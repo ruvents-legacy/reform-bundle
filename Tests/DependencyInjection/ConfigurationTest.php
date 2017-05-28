@@ -20,20 +20,20 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
             'ruvents_reform' => [
                 'upload' => null,
             ],
-        ], 'The child node "default_path" at path "ruvents_reform.upload" must be configured.');
+        ], 'The child node "path" at path "ruvents_reform.upload" must be configured.');
 
         $this->assertConfigurationIsInvalid([
             'ruvents_reform' => [
                 'upload' => [
-                    'default_path' => '',
+                    'path' => '',
                 ],
             ],
-        ], 'The path "ruvents_reform.upload.default_path" cannot contain an empty value, but got "".');
+        ], 'The path "ruvents_reform.upload.path" cannot contain an empty value, but got "".');
 
         $this->assertConfigurationIsValid([
             'ruvents_reform' => [
                 'upload' => [
-                    'default_path' => 'tmp',
+                    'path' => 'tmp',
                 ],
             ],
         ]);

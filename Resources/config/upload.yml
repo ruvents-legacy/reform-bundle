@@ -1,14 +1,19 @@
 services:
+  ruvents_reform.uploaded_file_manager:
+    class: Ruvents\ReformBundle\UploadedFileManager
+    arguments:
+      - ~
+
   ruvents_reform.upload_type:
     class: Ruvents\ReformBundle\Form\Type\UploadType
     arguments:
-      - ~
+      - "@ruvents_reform.uploaded_file_manager"
     tags:
       - { name: form.type }
 
   ruvents_reform.form_type_upload_extension:
-    class: Ruvents\ReformBundle\Form\Extension\FormTypeUploadExtension
+    class: Ruvents\ReformBundle\Form\TypeExtension\UploadFormTypeExtension
     arguments:
-      - '@ruvents_reform.upload_type'
+      - "@ruvents_reform.upload_type"
     tags:
       - { name: form.type_extension, extended_type: Symfony\Component\Form\Extension\Core\Type\FormType }
