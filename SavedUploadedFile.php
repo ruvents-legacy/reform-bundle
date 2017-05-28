@@ -97,14 +97,6 @@ class SavedUploadedFile extends UploadedFile
 
     private function removeMetadata()
     {
-        is_file($metadataPathname = $this->getMetadataPathname()) && @unlink($metadataPathname);
-    }
-
-    /**
-     * @return string
-     */
-    private function getMetadataPathname()
-    {
-        return self::metadataPathname($this->getPathname());
+        is_file($metadataPathname = self::metadataPathname($this->getPathname())) && @unlink($metadataPathname);
     }
 }
