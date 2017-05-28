@@ -29,7 +29,6 @@ class MultiCollectionType extends AbstractType
 
                 $prototypeOptions = array_replace([
                     'required' => $options['required'],
-                    'label' => $name.'label__',
                 ], $entry['options']);
 
                 if (null !== $entry['prototype_data']) {
