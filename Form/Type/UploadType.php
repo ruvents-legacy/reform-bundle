@@ -5,8 +5,7 @@ namespace Ruvents\ReformBundle\Form\Type;
 use Ruvents\ReformBundle\SavableUploadedFile;
 use Ruvents\ReformBundle\SavedUploadedFile;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
-use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+use Symfony\Component\Form\Extension\Core\Type;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
@@ -16,8 +15,6 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class UploadType extends AbstractType
 {
-    const ID_CHILD = '_id';
-
     /**
      * @var string
      */
@@ -38,10 +35,8 @@ class UploadType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $options['file_options']['required'] = $options['required'];
-
         $builder
-            ->add(self::ID_CHILD, HiddenType::class, ['mapped' => false])
+            ->add($options['id_name'], $options['id_type'], $options['id_options'])
             ->add($options['file_name'], $options['file_type'], $options['file_options'])
             ->addEventListener(FormEvents::PRE_SUBMIT, [$this, 'onPreSubmit']);
     }
@@ -54,11 +49,19 @@ class UploadType extends AbstractType
         $resolver
             ->setDefaults([
                 'error_bubbling' => false,
-                'file_name' => 'file',
-                'file_type' => FileType::class,
-                'file_options' => [],
                 'label' => false,
+                'id_name' => '_id',
+                'id_type' => Type\HiddenType::class,
+                'id_options' => [
+                    'mapped' => false,
+                ],
+                'file_name' => 'file',
+                'file_type' => Type\FileType::class,
+                'file_options' => [],
             ])
+            ->setAllowedTypes('id_name', 'string')
+            ->setAllowedTypes('id_type', 'string')
+            ->setAllowedTypes('id_options', 'array')
             ->setAllowedTypes('file_name', 'string')
             ->setAllowedTypes('file_type', 'string')
             ->setAllowedTypes('file_options', 'array');
@@ -68,32 +71,30 @@ class UploadType extends AbstractType
     {
         $form = $event->getForm();
         $data = $event->getData();
+        $idName = $form->getConfig()->getOption('id_name');
         $fileName = $form->getConfig()->getOption('file_name');
 
-        $id = isset($data[self::ID_CHILD]) && $this->isIdValid($data[self::ID_CHILD])
-            ? $data[self::ID_CHILD]
-            : null;
-        $uploadedFile = isset($data[$fileName]) && $data[$fileName] instanceof HttpUploadedFile
-            ? $data[$fileName]
-            : null;
+        $id = isset($data[$idName]) && $this->isIdValid($data[$idName]) ? $data[$idName] : null;
+        $file = isset($data[$fileName]) && $data[$fileName] instanceof HttpUploadedFile ? $data[$fileName] : null;
 
         // if a new file was uploaded
-        if (null !== $uploadedFile) {
-            if (null !== $id && null !== $old = SavedUploadedFile::find($this->getPathname($id))) {
-                $old->remove();
+        if (null !== $file) {
+            // remove old saved uploaded file if exists
+            if (null !== $id && null !== $oldFile = SavedUploadedFile::find($this->getPathname($id))) {
+                $oldFile->remove();
             }
 
             $id = $this->generateId();
-            $uploadedFile = SavableUploadedFile::fromUploadedFile($uploadedFile);
+            $file = SavableUploadedFile::fromUploadedFile($file);
 
-            $this->savableUploadedFiles[$this->getFormHash($form->getRoot())][$id] = $uploadedFile;
+            $this->savableUploadedFiles[$this->getFormHash($form->getRoot())][$id] = $file;
         } // when id is correct, try to find a saved uploaded file
         elseif (null !== $id) {
-            $uploadedFile = SavedUploadedFile::find($this->getPathname($id));
+            $file = SavedUploadedFile::find($this->getPathname($id));
         }
 
-        $data[self::ID_CHILD] = $id;
-        $data[$fileName] = $uploadedFile;
+        $data[$idName] = $id;
+        $data[$fileName] = $file;
 
         $event->setData($data);
     }
