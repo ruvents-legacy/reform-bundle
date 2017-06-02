@@ -24,11 +24,10 @@ final class Upload
     /**
      * @param string       $id
      * @param UploadedFile $file
-     * @param bool         $saved
      *
      * @throws \InvalidArgumentException
      */
-    public function __construct($id, UploadedFile $file, $saved = false)
+    public function __construct($id, UploadedFile $file)
     {
         if (!is_string($id)) {
             throw new \InvalidArgumentException(
@@ -44,7 +43,7 @@ final class Upload
 
         $this->id = $id;
         $this->file = $file;
-        $this->saved = $saved;
+        $this->saved = !is_uploaded_file($file->getPathname());
     }
 
     /**
@@ -82,14 +81,14 @@ final class Upload
             $metadata = json_decode(file_get_contents($metadataPathname), true);
         }
 
-        $file = new UploadedFile(
+        $file = new SavedUploadedFile(
             $pathname,
             isset($metadata['client_original_name']) ? $metadata['client_original_name'] : $id,
             isset($metadata['client_mime_type']) ? $metadata['client_mime_type'] : null,
             isset($metadata['client_size']) ? $metadata['client_size'] : null
         );
 
-        return new self($id, $file, true);
+        return new self($id, $file);
     }
 
     /**
@@ -142,7 +141,7 @@ final class Upload
 
         $file = $this->file->move(self::getTempDir(), $this->getId());
 
-        $this->file = new UploadedFile(
+        $this->file = new SavedUploadedFile(
             $file->getPathname(),
             $this->file->getClientOriginalName(),
             $this->file->getClientMimeType(),
