@@ -112,6 +112,14 @@ final class Upload
     /**
      * @return string
      */
+    public function __toString()
+    {
+        return (string)$this->file;
+    }
+
+    /**
+     * @return string
+     */
     public function getId()
     {
         return $this->id;
