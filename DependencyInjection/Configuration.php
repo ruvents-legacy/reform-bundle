@@ -18,13 +18,7 @@ class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
                 ->arrayNode('upload')
-                    ->canBeEnabled()
-                    ->children()
-                        ->scalarNode('path')
-                            ->isRequired()
-                            ->cannotBeEmpty()
-                        ->end()
-                    ->end()
+                    ->canBeDisabled()
                 ->end()
             ->end();
 

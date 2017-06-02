@@ -29,8 +29,8 @@ class UploadFormTypeExtension extends AbstractTypeExtension
         $builder->addEventListener(FormEvents::POST_SUBMIT, function (FormEvent $event) {
             $form = $event->getForm();
 
-            if ($form->isRoot()) {
-                $this->uploadType->saveUploadedFiles($form);
+            if ($form->isRoot() && $form->isValid()) {
+                $this->uploadType->saveNewUploads($form);
             }
         });
     }

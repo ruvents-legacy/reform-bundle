@@ -18,9 +18,6 @@ class RuventsReformExtension extends ConfigurableExtension
 
         if ($mergedConfig['upload']['enabled']) {
             $loader->load('upload.yml');
-
-            $container->findDefinition('ruvents_reform.upload_type')
-                ->replaceArgument(0, $mergedConfig['upload']['path']);
         }
     }
 }
