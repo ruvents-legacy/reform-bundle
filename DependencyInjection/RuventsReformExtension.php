@@ -16,8 +16,8 @@ class RuventsReformExtension extends ConfigurableExtension
     {
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
 
-        if ($mergedConfig['upload']['enabled']) {
-            $loader->load('upload.yml');
+        if ($mergedConfig['stateful_file']['enabled']) {
+            $loader->load('stateful_file.yml');
         }
     }
 }

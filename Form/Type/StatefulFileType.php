@@ -2,7 +2,7 @@
 
 namespace Ruvents\ReformBundle\Form\Type;
 
-use Ruvents\ReformBundle\Upload;
+use Ruvents\ReformBundle\StatefulFile;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\DataMapperInterface;
 use Symfony\Component\Form\Exception\UnexpectedTypeException;
@@ -15,12 +15,12 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class UploadType extends AbstractType implements DataMapperInterface
+class StatefulFileType extends AbstractType implements DataMapperInterface
 {
     /**
-     * @var Upload[][]
+     * @var StatefulFile[][]
      */
-    private $newUploads = [];
+    private $newFiles = [];
 
     /**
      * {@inheritdoc}
@@ -35,7 +35,7 @@ class UploadType extends AbstractType implements DataMapperInterface
                 $data = $event->getData();
 
                 if (isset($data['file']) && $data['file'] instanceof UploadedFile) {
-                    $data['id'] = Upload::generateId();
+                    $data['id'] = StatefulFile::generateId();
                     $event->setData($data);
                 }
             });
@@ -48,7 +48,7 @@ class UploadType extends AbstractType implements DataMapperInterface
     {
         $resolver
             ->setDefaults([
-                'data_class' => Upload::class,
+                'data_class' => StatefulFile::class,
                 'empty_data' => null,
                 'error_bubbling' => false,
                 'file_type' => FileType::class,
@@ -69,8 +69,8 @@ class UploadType extends AbstractType implements DataMapperInterface
             return;
         }
 
-        if (!$data instanceof Upload) {
-            throw new UnexpectedTypeException($data, sprintf('null or instance of %s', Upload::class));
+        if (!$data instanceof StatefulFile) {
+            throw new UnexpectedTypeException($data, sprintf('null or instance of %s', StatefulFile::class));
         }
 
         $forms = iterator_to_array($forms);
@@ -86,8 +86,8 @@ class UploadType extends AbstractType implements DataMapperInterface
      */
     public function mapFormsToData($forms, &$upload)
     {
-        if (null !== $upload && !$upload instanceof Upload) {
-            throw new UnexpectedTypeException($upload, sprintf('null or instance of %s', Upload::class));
+        if (null !== $upload && !$upload instanceof StatefulFile) {
+            throw new UnexpectedTypeException($upload, sprintf('null or instance of %s', StatefulFile::class));
         }
 
         $forms = iterator_to_array($forms);
@@ -102,22 +102,22 @@ class UploadType extends AbstractType implements DataMapperInterface
         $id = $forms['id']->getData();
 
         if ($forms['file']->isEmpty()) {
-            $upload = Upload::findById($id);
+            $upload = StatefulFile::findById($id);
         } else {
-            $upload = new Upload($id, $forms['file']->getData());
-            $this->newUploads[$this->getFormHash($forms['file']->getRoot())][] = $upload;
+            $upload = new StatefulFile($id, $forms['file']->getData());
+            $this->newFiles[$this->getFormHash($forms['file']->getRoot())][] = $upload;
         }
     }
 
-    public function saveNewUploads(FormInterface $rootForm)
+    public function saveNewFiles(FormInterface $rootForm)
     {
         $hash = $this->getFormHash($rootForm);
 
-        if (!isset($this->newUploads[$hash])) {
+        if (!isset($this->newFiles[$hash])) {
             return;
         }
 
-        foreach ($this->newUploads[$hash] as $upload) {
+        foreach ($this->newFiles[$hash] as $upload) {
             $upload->save();
         }
     }

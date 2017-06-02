@@ -4,7 +4,7 @@ namespace Ruvents\ReformBundle;
 
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-final class Upload
+final class StatefulFile
 {
     /**
      * @var string
@@ -51,7 +51,7 @@ final class Upload
     /**
      * @param string $id
      *
-     * @return null|Upload
+     * @return null|StatefulFile
      * @throws \InvalidArgumentException
      */
     public static function findById($id)

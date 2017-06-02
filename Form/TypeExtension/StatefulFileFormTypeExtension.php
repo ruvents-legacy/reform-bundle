@@ -2,21 +2,21 @@
 
 namespace Ruvents\ReformBundle\Form\TypeExtension;
 
-use Ruvents\ReformBundle\Form\Type\UploadType;
+use Ruvents\ReformBundle\Form\Type\StatefulFileType;
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 
-class UploadFormTypeExtension extends AbstractTypeExtension
+class StatefulFileFormTypeExtension extends AbstractTypeExtension
 {
     /**
-     * @var UploadType
+     * @var StatefulFileType
      */
     private $uploadType;
 
-    public function __construct(UploadType $uploadType)
+    public function __construct(StatefulFileType $uploadType)
     {
         $this->uploadType = $uploadType;
     }
@@ -30,7 +30,7 @@ class UploadFormTypeExtension extends AbstractTypeExtension
             $form = $event->getForm();
 
             if ($form->isRoot() && $form->isValid()) {
-                $this->uploadType->saveNewUploads($form);
+                $this->uploadType->saveNewFiles($form);
             }
         });
     }

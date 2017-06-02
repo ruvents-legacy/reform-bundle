@@ -17,7 +17,7 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
-                ->arrayNode('upload')
+                ->arrayNode('stateful_file')
                     ->canBeDisabled()
                 ->end()
             ->end();
