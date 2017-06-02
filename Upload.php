@@ -17,11 +17,6 @@ final class Upload
     private $file;
 
     /**
-     * @var bool
-     */
-    private $saved = false;
-
-    /**
      * @param string       $id
      * @param UploadedFile $file
      *
@@ -43,7 +38,6 @@ final class Upload
 
         $this->id = $id;
         $this->file = $file;
-        $this->saved = !is_uploaded_file($file->getPathname());
     }
 
     /**
@@ -138,12 +132,12 @@ final class Upload
      */
     public function isSaved()
     {
-        return $this->saved;
+        return !is_uploaded_file($this->file->getPathname());
     }
 
     public function save()
     {
-        if ($this->saved) {
+        if ($this->isSaved()) {
             return;
         }
 
@@ -164,7 +158,5 @@ final class Upload
         ];
 
         file_put_contents($metadataPathname, json_encode($metadata, JSON_UNESCAPED_UNICODE));
-
-        $this->saved = true;
     }
 }
