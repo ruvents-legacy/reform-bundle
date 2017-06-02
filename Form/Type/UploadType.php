@@ -52,8 +52,9 @@ class UploadType extends AbstractType implements DataMapperInterface
                 'empty_data' => null,
                 'error_bubbling' => false,
                 'file_type' => FileType::class,
-                'file_options' => [],
-                'label' => false,
+                'file_options' => [
+                    'label' => false,
+                ],
             ])
             ->setAllowedTypes('file_type', 'string')
             ->setAllowedTypes('file_options', 'array');
