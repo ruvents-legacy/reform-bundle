@@ -30,4 +30,11 @@ class SavedUploadedFile extends UploadedFile
     {
         return File::move($directory, $name);
     }
+
+    public function remove()
+    {
+        if ($this->isFile()) {
+            @unlink($this->getPathname());
+        }
+    }
 }
