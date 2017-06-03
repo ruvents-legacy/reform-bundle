@@ -14,11 +14,11 @@ class StatefulFileFormTypeExtension extends AbstractTypeExtension
     /**
      * @var StatefulFileType
      */
-    private $uploadType;
+    private $statefulFileType;
 
     public function __construct(StatefulFileType $uploadType)
     {
-        $this->uploadType = $uploadType;
+        $this->statefulFileType = $uploadType;
     }
 
     /**
@@ -30,7 +30,7 @@ class StatefulFileFormTypeExtension extends AbstractTypeExtension
             $form = $event->getForm();
 
             if ($form->isRoot() && $form->isValid()) {
-                $this->uploadType->saveNewFiles($form);
+                $this->statefulFileType->saveFormFiles($form);
             }
         });
     }

@@ -18,9 +18,11 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 class StatefulFileType extends AbstractType implements DataMapperInterface
 {
     /**
+     * new StatefulFiles by root form hash
+     *
      * @var StatefulFile[][]
      */
-    private $newFiles = [];
+    private $formFiles = [];
 
     /**
      * {@inheritdoc}
@@ -105,19 +107,19 @@ class StatefulFileType extends AbstractType implements DataMapperInterface
             $upload = StatefulFile::findById($id);
         } else {
             $upload = new StatefulFile($id, $forms['file']->getData());
-            $this->newFiles[$this->getFormHash($forms['file']->getRoot())][] = $upload;
+            $this->formFiles[$this->getFormHash($forms['file']->getRoot())][] = $upload;
         }
     }
 
-    public function saveNewFiles(FormInterface $rootForm)
+    public function saveFormFiles(FormInterface $rootForm)
     {
         $hash = $this->getFormHash($rootForm);
 
-        if (!isset($this->newFiles[$hash])) {
+        if (!isset($this->formFiles[$hash])) {
             return;
         }
 
-        foreach ($this->newFiles[$hash] as $upload) {
+        foreach ($this->formFiles[$hash] as $upload) {
             $upload->save();
         }
     }
