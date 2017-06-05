@@ -1,12 +1,10 @@
 services:
-  Ruvents\ReformBundle\Form\Type\StatefulFileType:
-    class: Ruvents\ReformBundle\Form\Type\StatefulFileType
-    tags:
-      - { name: form.type }
-
-  Ruvents\ReformBundle\Form\TypeExtension\StatefulFileFormTypeExtension:
-    class: Ruvents\ReformBundle\Form\TypeExtension\StatefulFileFormTypeExtension
-    arguments:
-      - "@Ruvents\\ReformBundle\\Form\\Type\\StatefulFileType"
+  Ruvents\ReformBundle\Form\TypeExtension\FormTypeStatefulFileExtension:
+    class: Ruvents\ReformBundle\Form\TypeExtension\FormTypeStatefulFileExtension
     tags:
       - { name: form.type_extension, extended_type: Symfony\Component\Form\Extension\Core\Type\FormType }
+
+  Ruvents\ReformBundle\Form\TypeExtension\StatefulFileExtension:
+    class: Ruvents\ReformBundle\Form\TypeExtension\StatefulFileExtension
+    tags:
+      - { name: form.type_extension, extended_type: Symfony\Component\Form\Extension\Core\Type\FileType }

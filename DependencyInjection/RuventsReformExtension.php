@@ -5,19 +5,16 @@ namespace Ruvents\ReformBundle\DependencyInjection;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
-use Symfony\Component\HttpKernel\DependencyInjection\ConfigurableExtension;
+use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 
-class RuventsReformExtension extends ConfigurableExtension
+class RuventsReformExtension extends Extension
 {
     /**
      * {@inheritdoc}
      */
-    public function loadInternal(array $mergedConfig, ContainerBuilder $container)
+    public function load(array $configs, ContainerBuilder $container)
     {
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
-
-        if ($mergedConfig['stateful_file']['enabled']) {
-            $loader->load('stateful_file.yml');
-        }
+        $loader->load('stateful_file.yml');
     }
 }
